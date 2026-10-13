@@ -1,0 +1,467 @@
+---
+title: "Attention Is All You Need"
+description: "あなたに必要なのは注目だけです"
+sidebar:
+  order: 11
+---
+
+shish Vaswani∗ Google Brain avaswani@google.com
+アシシュ・ヴァスワニ コンピュータ科学者
+
+Noam Shazeer∗ Google Brain noam@google.com
+ノーム・シャジール 起業家
+
+Niki Parmar∗ Google Research nikip@google.com
+ニキ・パーマー 作家
+
+Jakob Uszkoreit∗ Google Research usz@google.com
+ヤコブ・ウスコライト 機械学習工学者
+
+Llion Jones∗ Google Research llion@google.com
+ライオン・ジョーンズ コンピュータ科学者
+
+Aidan N. Gomez∗ † University of Toronto aidan@cs.toronto.edu
+エイダン・ゴメス コンピュータ科学者
+
+Łukasz Kaiser∗ Google Brain lukaszkaiser@google.com
+ルカシュ・カイザー コンピュータ科学者
+
+Illia Polosukhin∗ ‡ illia.polosukhin@gmail.com
+イリヤ・ポロスキン 作家
+
+## Abstract
+
+概要
+
+The dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. The best performing models also connect the encoder and decoder through an attention mechanism. We propose a new simple network architecture, the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely. Experiments on two machine translation tasks show these models to be superior in quality while being more parallelizable and requiring significantly less time to train. Our model achieves 28.4 BLEU on the WMT 2014 English-to-German translation task, improving over the existing best results, including ensembles, by over 2 BLEU. On the WMT 2014 English-to-French translation task, our model establishes a new single-model state-of-the-art BLEU score of 41.8 after training for 3.5 days on eight GPUs, a small fraction of the training costs of the best models from the literature. We show that the Transformer generalizes well to other tasks by applying it successfully to English constituency parsing both with large and limited training data.
+
+現在主流となっている系列変換（sequence transduction）モデルは、エンコーダとデコーダを含む、複雑な再帰型ニューラルネットワークや畳み込みニューラルネットワークに基づいています。特に高性能なモデルでは、エンコーダとデコーダがアテンション機構によって接続されています。本論文では、再帰や畳み込みを一切用いず、アテンション機構のみに基づいた新しい単純なネットワークアーキテクチャ「Transformer」を提案します。2つの機械翻訳タスクにおける実験の結果、本モデルは翻訳品質において優れているだけでなく、並列化が容易であり、かつ学習に要する時間も大幅に短いことが示されました。本モデルは、WMT 2014の英独翻訳タスクにおいて28.4 BLEUを達成し、アンサンブル手法を含む既存の最高記録を2 BLEU以上上回りました。また、WMT 2014の英仏翻訳タスクにおいては、8基のGPUを用いて3.5日間学習させることで、単一モデルとして41.8という新たな最高（SOTA）BLEUスコアを達成しました。これは、先行研究における最高性能モデルの学習コストと比較して、ごくわずかなコストで実現されたものです。さらに、英語の構成素解析（constituency parsing）タスクに対し、大規模な学習データを用いる場合と限られたデータを用いる場合の双方で本モデルを適用し、良好な汎化性能を示すことを実証しました。
+
+## 1 Introduction
+
+はじめに
+
+Recurrent neural networks, long short-term memory [[13]](#13) and gated recurrent [[7]](#7) neural networks in particular, have been firmly established as state of the art approaches in sequence modeling and transduction problems such as language modeling and machine translation [[35]](#35) [[2]](#2) [[5]](#5). Numerous efforts have since continued to push the boundaries of recurrent language models and encoder-decoder architectures [[38]](#38) [[24]](#24) [[15]](#15).
+
+再帰型ニューラルネットワーク、とりわけLong Short-Term Memory（LSTM）[[13]](#13) やGated Recurrent Unit（GRU）[[7]](#7) を用いたネットワークは、言語モデルや機械翻訳といった系列モデリングおよびトランスダクションの課題において、最先端の手法としての地位を確立しています[[35]](#35) [[2]](#2) [[5]](#5)。その後も、再帰型言語モデルやエンコーダ・デコーダ・アーキテクチャの可能性をさらに押し広げるための研究が数多く続けられています[[38]](#38) [[24]](#24) [[15]](#15)。
+
+Recurrent models typically factor computation along the symbol positions of the input and output sequences. Aligning the positions to steps in computation time, they generate a sequence of hidden states $$h_t$$, as a function of the previous hidden state  $$h_{t-1}$$ and the input for position $$t$$ . This inherently sequential nature precludes parallelization within training examples, which becomes critical at longer sequence lengths, as memory constraints limit batching across examples. Recent work has achieved significant improvements in computational efficiency through factorization tricks [[21]](#21) and conditional computation [[32]](#32), while also improving model performance in case of the latter. The fundamental constraint of sequential computation, however, remains.
+
+再帰型モデルは通常、入出力シーケンスのシンボル位置に沿って計算を分解します。これらの位置を計算時間のステップに対応させ、前の隠れ状態 $$h_{t-1}$$ と位置 $$t$$ における入力の関数として、隠れ状態の系列 $$h_t$$ を生成します。このような本質的に逐次的な性質は、学習サンプル内での並列化を妨げます。シーケンス長が長くなると、メモリ制約によってサンプル間でのバッチ処理が制限されるため、この点は特に大きな問題となります。近年の研究では、分解の工夫 [[21]](#21) や条件付き計算 [[32]](#32) を用いることで計算効率が大幅に向上しており、後者の手法ではモデル性能の改善も実現されています。しかし、逐次的な計算という根本的な制約は依然として残っています。
+
+Attention mechanisms have become an integral part of compelling sequence modeling and transduction models in various tasks, allowing modeling of dependencies without regard to their distance in the input or output sequences [[2]](#2) [[19]](#19). In all but a few cases [[27]](#27), however, such attention mechanisms are used in conjunction with a recurrent network.
+
+アテンション機構は、様々なタスクにおける強力な系列モデリングやトランスダクションモデルに不可欠な要素となっており、入力系列や出力系列内での距離に関係なく依存関係をモデル化することを可能にしています [[2]](#2) [[19]](#19)。しかし、ごく一部の例外 [[27]](#27) を除き、こうしたアテンション機構はリカレントネットワークと組み合わせて使用されています。
+
+In this work we propose the Transformer, a model architecture eschewing recurrence and instead relying entirely on an attention mechanism to draw global dependencies between input and output. The Transformer allows for significantly more parallelization and can reach a new state of the art in translation quality after being trained for as little as twelve hours on eight P100 GPUs.
+
+本研究では、再帰構造を用いず、入力と出力の間の大域的な依存関係を捉えるために全面的にアテンション機構に依存するモデルアーキテクチャ「Transformer」を提案します。Transformerは大幅な並列処理を可能にし、8基のP100 GPUを用いてわずか12時間学習させるだけで、翻訳品質において新たな最先端（SOTA）の性能を達成できます。
+
+## 2 Background
+
+背景
+
+The goal of reducing sequential computation also forms the foundation of the Extended Neural GPU [[16]](#16), ByteNet [[18]](#18) and ConvS2S [[9]](#9), all of which use convolutional neural networks as basic building block, computing hidden representations in parallel for all input and output positions. In these models, the number of operations required to relate signals from two arbitrary input or output positions grows in the distance between positions, linearly for ConvS2S and logarithmically for ByteNet. This makes it more difficult to learn dependencies between distant positions [[12]](#12). In the Transformer this is reduced to a constant number of operations, albeit at the cost of reduced effective resolution due to averaging attention-weighted positions, an effect we counteract with Multi-Head Attention as described in section 3.2.
+
+逐次的な計算を削減するという目標は、Extended Neural GPU [[16]](#16)、ByteNet [[18]](#18)、およびConvS2S [[9]](#9)の設計の基礎ともなっています。これらはいずれも畳み込みニューラルネットワークを基本構成要素として採用し、すべての入力および出力位置について隠れ表現を並列に計算するものです。これらのモデルでは、任意の2つの入力位置または出力位置の信号を関連付けるために必要な演算数は、それらの位置間の距離に応じて増加します（ConvS2Sでは線形に、ByteNetでは対数的に増加）。そのため、離れた位置間にある依存関係を学習することが困難になります [[12]](#12)。一方、Transformerではこの演算数が定数にまで削減されています。ただし、その代償として、アテンションの重みに基づいて位置情報を平均化することによる有効解像度の低下が生じます。この影響については、セクション3.2で述べる「マルチヘッド・アテンション（Multi-Head Attention）」を用いることで相殺しています。
+
+Self-attention, sometimes called intra-attention is an attention mechanism relating different positions of a single sequence in order to compute a representation of the sequence. Self-attention has been used successfully in a variety of tasks including reading comprehension, abstractive summarization, textual entailment and learning task-independent sentence representations [[4]](#4) [[27]](#27) [[28]](#28) [[22]](#27).
+
+自己アテンション（イントラ・アテンションとも呼ばれる）は、単一のシーケンスの表現を計算するために、そのシーケンス内の異なる位置同士を関連付けるアテンション機構です。自己アテンションは、読解、抽象型要約、含意関係認識、タスクに依存しない文表現の学習など、様々なタスクにおいて有効に活用されています [[4]](#4) [[27]](#27) [[28]](#28) [[22]](#22)。
+
+End-to-end memory networks are based on a recurrent attention mechanism instead of sequence-aligned recurrence and have been shown to perform well on simple-language question answering and language modeling tasks [[34]](#34).
+
+End-to-endメモリネットワークは、系列に沿った再帰（sequence-aligned recurrence）の代わりに再帰的アテンション機構に基づいており、単純な言語を用いた質問応答や言語モデリングのタスクにおいて良好な性能を示すことが示されています [[34]](#34)。
+
+To the best of our knowledge, however, the Transformer is the first transduction model relying entirely on self-attention to compute representations of its input and output without using sequence-aligned RNNs or convolution. In the following sections, we will describe the Transformer, motivate self-attention and discuss its advantages over models such as [[17]](#17) [[18]](#18) and [[9]](#9).
+
+しかし、我々の知る限り、Transformerは、シーケンスに沿ったRNNや畳み込みを用いることなく、入力と出力の表現を計算するために完全に自己注意（self-attention）に依存する、最初のトランスダクション・モデルです。以降のセクションでは、Transformerについて説明し、自己注意を採用するに至った背景を述べるとともに、[[17]](#17) [[18]](#18)や[[9]](#9)といったモデルと比較した際の利点について論じます。
+
+## 3 Model Architecture
+
+モデルのアーキテクチャ
+
+![Figure 1:The Transformer - model architecture.](https://arxiv.org/html/1706.03762v7/Figures/ModalNet-21.png)
+
+Figure 1:The Transformer - model architecture.
+
+図1：Transformer — モデルアーキテクチャ
+
+Most competitive neural sequence transduction models have an encoder-decoder structure [[5]](#5) [[2]](#2) [[35]](#35). Here, the encoder maps an input sequence of symbol representations $$(x_1, \dots, x_n)$$ to a sequence of continuous representations $$\mathbf{z} = (z_1, \dots, z_n)$$. Given $$\mathbf{z}$$, the decoder then generates an output sequence $$(y_1, \dots, y_m)$$ of symbols one element at a time. At each step the model is auto-regressive [[10]](#10), consuming the previously generated symbols as additional input when generating the next.
+
+高性能なニューラル系列変換モデルの多くは、エンコーダ・デコーダ構造を採用しています [[5]](#5) [[2]](#2) [[35]](#35)。この構造において、エンコーダはシンボル表現の入力系列 $$(x_1, \dots, x_n)$$ を、連続値表現の系列 $$\mathbf{z} = (z_1, \dots, z_n)$$ へと写像します。続いてデコーダは、$$\mathbf{z}$$ を受け取り、シンボルの出力系列 $$(y_1, \dots, y_m)$$ を要素ごとに生成します。各ステップにおいて、このモデルは自己回帰的 [[10]](#10) な性質を持ち、次のシンボルを生成する際に、それまでに生成されたシンボルを追加の入力として利用します。
+
+The Transformer follows this overall architecture using stacked self-attention and point-wise, fully connected layers for both the encoder and decoder, shown in the left and right halves of Figure 1, respectively.
+
+Transformerは、図1の左側と右側にそれぞれ示されるエンコーダとデコーダの双方において、積層されたセルフアテンション層とポイントワイズ全結合層を用いた全体的なアーキテクチャを採用しています。
+
+### 3.1 Encoder and Decoder Stacks
+
+エンコーダおよびデコーダのスタック
+
+#### Encoder:
+
+エンコーダ:
+
+The encoder is composed of a stack of $$N=6$$ identical layers. Each layer has two sub-layers. The first is a multi-head self-attention mechanism, and the second is a simple, position-wise fully connected feed-forward network. We employ a residual connection [[11]](#11) around each of the two sub-layers, followed by layer normalization [[1]](#1). That is, the output of each sub-layer is $$\text{LayerNorm}(x + \text{Sublayer}(x))$$ is the function implemented by the sub-layer itself. To facilitate these residual connections, all sub-layers in the model, as well as the embedding layers, produce outputs of dimension $$d_{\text{model}}=512$$.
+
+エンコーダは、同一の層を $$N=6$$ 個積み重ねた構成になっています。各層は2つのサブレイヤから成ります。1つ目はマルチヘッド・セルフアテンション機構であり、2つ目は単純な、位置ごとの全結合フィードフォワードネットワークです。これら2つのサブレイヤのそれぞれにおいて、残差接続 [[11]](#11) を採用し、その後に層正規化（レイヤ・ノーマライゼーション）[[1]](#1) を行います。すなわち、各サブレイヤの出力は $$\text{LayerNorm}(x + \text{Sublayer}(x))$$ となります。ここで、$$\text{Sublayer}(x)$$ はそのサブレイヤ自体が実装する関数です。これらの残差接続を容易にするため、モデル内のすべてのサブレイヤおよび埋め込み層は、次元数 $$d_{\text{model}}=512$$ の出力を生成します。
+
+#### Decoder:
+
+デコーダ:
+
+The decoder is also composed of a stack of $$N=6$$ identical layers. In addition to the two sub-layers in each encoder layer, the decoder inserts a third sub-layer, which performs multi-head attention over the output of the encoder stack. Similar to the encoder, we employ residual connections around each of the sub-layers, followed by layer normalization. We also modify the self-attention sub-layer in the decoder stack to prevent positions from attending to subsequent positions. This masking, combined with fact that the output embeddings are offset by one position, ensures that the predictions for position $$i$$ can depend only on the known outputs at positions less than $$i$$.
+
+デコーダもまた、同一の層を $$N=6$$ 個積み重ねた構成になっています。各エンコーダ層にある2つのサブ層に加え、デコーダには3つ目のサブ層が挿入されており、この層はエンコーダスタックの出力に対してマルチヘッド・アテンション（multi-head attention）を実行します。エンコーダと同様に、各サブ層の周囲には残差接続（residual connection）を設け、その後に層正規化（layer normalization）を行います。また、デコーダスタック内の自己注意（self-attention）サブ層に修正を加え、ある位置がそれ以降の位置に対して注意を向けないようにしています。このマスキング処理と、出力埋め込み（output embeddings）を1位置分ずらすという工夫を組み合わせることで、位置 $$i$$ における予測が、位置 $$i$$ 未満の既知の出力のみに依存するようにしています。
+
+### 3.2 Attention
+
+アテンション
+
+#### 3.2.1 Scaled Dot-Product Attention
+
+スケーリング付きドット積アテンション
+
+#### 3.2.2 Multi-Head Attention
+
+マルチヘッド・アテンション
+
+#### 3.2.3 Applications of Attention in our Model
+
+本モデルにおけるアテンションの適用
+
+### 3.3 Position-wise Feed-Forward Networks
+
+位置ごとのフィードフォワード・ネットワーク
+
+### 3.4 Embeddings and Softmax
+
+埋め込みとソフトマックス
+
+### 3.5 Positional Encoding
+
+位置エンコーディング
+
+## 4 Why Self-Attention
+
+なぜセルフアテンションなのか
+
+## 5 Training
+
+学習
+
+### 5.1 Training Data and Batching
+
+学習データとバッチ処理
+
+### 5.2 Hardware and Schedule
+
+ハードウェアとスケジュール
+
+### 5.3 Optimizer
+
+最適化手法
+
+### 5.4 Regularization
+
+正則化
+
+#### Residual Dropout
+
+残差ドロップアウト
+
+#### Label Smoothing
+
+ラベルスムージング
+
+## 6 Results
+
+結果
+
+### 6.1 Machine Translation
+
+機械翻訳
+
+### 6.2 Model Variations
+
+モデルのバリエーション
+
+### 6.3 English Constituency Parsing
+
+英語の構成素解析
+
+## 7 Conclusion
+
+結論
+
+In this work, we presented the Transformer, the first sequence transduction model based entirely on attention, replacing the recurrent layers most commonly used in encoder-decoder architectures with multi-headed self-attention.
+
+本研究では、エンコーダ・デコーダ・アーキテクチャにおいて一般的に用いられてきた再帰的（リカレント）な層をマルチヘッド・セルフ・アテンションに置き換え、完全にアテンションに基づく初のシーケンス変換モデルである「Transformer」を提案しました。
+
+For translation tasks, the Transformer can be trained significantly faster than architectures based on recurrent or convolutional layers. On both WMT 2014 English-to-German and WMT 2014 English-to-French translation tasks, we achieve a new state of the art. In the former task our best model outperforms even all previously reported ensembles.
+
+翻訳タスクにおいて、Transformerは、再帰層や畳み込み層に基づくアーキテクチャよりも大幅に高速に学習可能です。WMT 2014の英独および英仏翻訳タスクの双方において、我々は新たな最先端（SOTA）の性能を達成しました。特に英独翻訳タスクでは、我々の最良モデルは、これまでに報告されたあらゆるアンサンブル手法をも上回る性能を示しています。
+
+We are excited about the future of attention-based models and plan to apply them to other tasks. We plan to extend the Transformer to problems involving input and output modalities other than text and to investigate local, restricted attention mechanisms to efficiently handle large inputs and outputs such as images, audio and video. Making generation less sequential is another research goals of ours.
+
+私たちはアテンション・ベースのモデルの将来性に期待を寄せており、それらを他のタスクにも適用していく計画です。具体的には、テキスト以外の入出力モダリティを伴う問題へとTransformerを拡張することや、画像・音声・動画といった大規模な入出力を効率的に扱うための、局所的かつ制約されたアテンション機構を検討することを予定しています。また、生成処理における逐次的な性質を低減させることも、私たちの研究目標の一つです。
+
+The code we used to train and evaluate our models is available at [https://github.com/tensorflow/tensor2tensor](https://github.com/tensorflow/tensor2tensor).
+
+モデルの学習と評価に使用したコードは、[https://github.com/tensorflow/tensor2tensor](https://github.com/tensorflow/tensor2tensor) で公開されています。
+
+#### Acknowledgements
+
+謝辞
+
+We are grateful to Nal Kalchbrenner and Stephan Gouws for their fruitful comments, corrections and inspiration.
+
+有益なコメント、修正、そしてインスピレーションをくださったNal Kalchbrenner氏とStephan Gouws氏に感謝いたします。
+
+## References
+
+参考文献
+
+###### [1]
+
+Jimmy Lei Ba, Jamie Ryan Kiros, and Geoffrey E Hinton.
+Layer normalization.
+arXiv preprint arXiv:1607.06450, 2016.
+
+###### [2]
+
+Dzmitry Bahdanau, Kyunghyun Cho, and Yoshua Bengio.
+Neural machine translation by jointly learning to align and translate.
+CoRR, abs/1409.0473, 2014.
+
+###### [3]
+
+Denny Britz, Anna Goldie, Minh-Thang Luong, and Quoc V. Le.
+Massive exploration of neural machine translation architectures.
+CoRR, abs/1703.03906, 2017.
+
+###### [4]
+
+Jianpeng Cheng, Li Dong, and Mirella Lapata.
+Long short-term memory-networks for machine reading.
+arXiv preprint arXiv:1601.06733, 2016.
+
+###### [5]
+
+Kyunghyun Cho, Bart van Merrienboer, Caglar Gulcehre, Fethi Bougares, Holger Schwenk, and Yoshua Bengio.
+Learning phrase representations using rnn encoder-decoder for statistical machine translation.
+CoRR, abs/1406.1078, 2014.
+
+###### [6]
+
+Francois Chollet.
+Xception: Deep learning with depthwise separable convolutions.
+arXiv preprint arXiv:1610.02357, 2016.
+
+###### [7]
+
+Junyoung Chung, Çaglar Gülçehre, Kyunghyun Cho, and Yoshua Bengio.
+Empirical evaluation of gated recurrent neural networks on sequence modeling.
+CoRR, abs/1412.3555, 2014.
+
+###### [8]
+
+Chris Dyer, Adhiguna Kuncoro, Miguel Ballesteros, and Noah A. Smith.
+Recurrent neural network grammars.
+In Proc. of NAACL, 2016.
+
+###### [9]
+
+Jonas Gehring, Michael Auli, David Grangier, Denis Yarats, and Yann N. Dauphin.
+Convolutional sequence to sequence learning.
+arXiv preprint arXiv:1705.03122v2, 2017.
+
+###### [10]
+
+Alex Graves.
+Generating sequences with recurrent neural networks.
+arXiv preprint arXiv:1308.0850, 2013.
+
+###### [11]
+
+Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun.
+Deep residual learning for image recognition.
+In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition, pages 770–778, 2016.
+
+###### [12]
+
+Sepp Hochreiter, Yoshua Bengio, Paolo Frasconi, and Jürgen Schmidhuber.
+Gradient flow in recurrent nets: the difficulty of learning long-term dependencies, 2001.
+
+###### [13]
+
+Sepp Hochreiter and Jürgen Schmidhuber.
+Long short-term memory.
+Neural computation, 9(8):1735–1780, 1997.
+
+###### [14]
+
+Zhongqiang Huang and Mary Harper.
+Self-training PCFG grammars with latent annotations across languages.
+In Proceedings of the 2009 Conference on Empirical Methods in Natural Language Processing, pages 832–841. ACL, August 2009.
+
+###### [15]
+
+Rafal Jozefowicz, Oriol Vinyals, Mike Schuster, Noam Shazeer, and Yonghui Wu.
+Exploring the limits of language modeling.
+arXiv preprint arXiv:1602.02410, 2016.
+
+###### [16]
+
+Łukasz Kaiser and Samy Bengio.
+Can active memory replace attention?
+In Advances in Neural Information Processing Systems, (NIPS), 2016.
+
+###### [17]
+
+Łukasz Kaiser and Ilya Sutskever.
+Neural GPUs learn algorithms.
+In International Conference on Learning Representations (ICLR), 2016.
+
+###### [18]
+
+Nal Kalchbrenner, Lasse Espeholt, Karen Simonyan, Aaron van den Oord, Alex Graves, and Koray Kavukcuoglu.
+Neural machine translation in linear time.
+arXiv preprint arXiv:1610.10099v2, 2017.
+
+###### [19]
+
+Yoon Kim, Carl Denton, Luong Hoang, and Alexander M. Rush.
+Structured attention networks.
+In International Conference on Learning Representations, 2017.
+
+###### [20]
+
+Diederik Kingma and Jimmy Ba.
+Adam: A method for stochastic optimization.
+In ICLR, 2015.
+
+###### [21]
+
+Oleksii Kuchaiev and Boris Ginsburg.
+Factorization tricks for LSTM networks.
+arXiv preprint arXiv:1703.10722, 2017.
+
+###### [22]
+
+Zhouhan Lin, Minwei Feng, Cicero Nogueira dos Santos, Mo Yu, Bing Xiang, Bowen Zhou, and Yoshua Bengio.
+A structured self-attentive sentence embedding.
+arXiv preprint arXiv:1703.03130, 2017.
+
+###### [23]
+
+Minh-Thang Luong, Quoc V. Le, Ilya Sutskever, Oriol Vinyals, and Lukasz Kaiser.
+Multi-task sequence to sequence learning.
+arXiv preprint arXiv:1511.06114, 2015.
+
+###### [24]
+
+Minh-Thang Luong, Hieu Pham, and Christopher D Manning.
+Effective approaches to attention-based neural machine translation.
+arXiv preprint arXiv:1508.04025, 2015.
+
+###### [25]
+
+Mitchell P Marcus, Mary Ann Marcinkiewicz, and Beatrice Santorini.
+Building a large annotated corpus of english: The penn treebank.
+Computational linguistics, 19(2):313–330, 1993.
+
+###### [26]
+
+David McClosky, Eugene Charniak, and Mark Johnson.
+Effective self-training for parsing.
+In Proceedings of the Human Language Technology Conference of the NAACL, Main Conference, pages 152–159. ACL, June 2006.
+
+###### [27]
+
+Ankur Parikh, Oscar Täckström, Dipanjan Das, and Jakob Uszkoreit.
+A decomposable attention model.
+In Empirical Methods in Natural Language Processing, 2016.
+
+###### [28]
+
+Romain Paulus, Caiming Xiong, and Richard Socher.
+A deep reinforced model for abstractive summarization.
+arXiv preprint arXiv:1705.04304, 2017.
+
+###### [29]
+
+Slav Petrov, Leon Barrett, Romain Thibaux, and Dan Klein.
+Learning accurate, compact, and interpretable tree annotation.
+In Proceedings of the 21st International Conference on Computational Linguistics and 44th Annual Meeting of the ACL, pages 433–440. ACL, July 2006.
+
+###### [30]
+
+Ofir Press and Lior Wolf.
+Using the output embedding to improve language models.
+arXiv preprint arXiv:1608.05859, 2016.
+
+###### [31]
+
+Rico Sennrich, Barry Haddow, and Alexandra Birch.
+Neural machine translation of rare words with subword units.
+arXiv preprint arXiv:1508.07909, 2015.
+
+###### [32]
+
+Noam Shazeer, Azalia Mirhoseini, Krzysztof Maziarz, Andy Davis, Quoc Le, Geoffrey Hinton, and Jeff Dean.
+Outrageously large neural networks: The sparsely-gated mixture-of-experts layer.
+arXiv preprint arXiv:1701.06538, 2017.
+
+###### [33]
+
+Nitish Srivastava, Geoffrey E Hinton, Alex Krizhevsky, Ilya Sutskever, and Ruslan Salakhutdinov.
+Dropout: a simple way to prevent neural networks from overfitting.
+Journal of Machine Learning Research, 15(1):1929–1958, 2014.
+
+###### [34]
+
+Sainbayar Sukhbaatar, Arthur Szlam, Jason Weston, and Rob Fergus.
+End-to-end memory networks.
+In C. Cortes, N. D. Lawrence, D. D. Lee, M. Sugiyama, and R. Garnett, editors, Advances in Neural Information Processing Systems 28, pages 2440–2448. Curran Associates, Inc., 2015.
+
+###### [35]
+
+Ilya Sutskever, Oriol Vinyals, and Quoc VV Le.
+Sequence to sequence learning with neural networks.
+In Advances in Neural Information Processing Systems, pages 3104–3112, 2014.
+
+###### [36]
+
+Christian Szegedy, Vincent Vanhoucke, Sergey Ioffe, Jonathon Shlens, and Zbigniew Wojna.
+Rethinking the inception architecture for computer vision.
+CoRR, abs/1512.00567, 2015.
+
+###### [37]
+
+Vinyals & Kaiser, Koo, Petrov, Sutskever, and Hinton.
+Grammar as a foreign language.
+In Advances in Neural Information Processing Systems, 2015.
+
+###### [38]
+
+Yonghui Wu, Mike Schuster, Zhifeng Chen, Quoc V Le, Mohammad Norouzi, Wolfgang Macherey, Maxim Krikun, Yuan Cao, Qin Gao, Klaus Macherey, et al.
+Google’s neural machine translation system: Bridging the gap between human and machine translation.
+arXiv preprint arXiv:1609.08144, 2016.
+
+###### [39]
+
+Jie Zhou, Ying Cao, Xuguang Wang, Peng Li, and Wei Xu.
+Deep recurrent models with fast-forward connections for neural machine translation.
+CoRR, abs/1606.04199, 2016.
+
+###### [40]
+
+Muhua Zhu, Yue Zhang, Wenliang Chen, Min Zhang, and Jingbo Zhu.
+Fast and accurate shift-reduce constituent parsing.
+In Proceedings of the 51st Annual Meeting of the ACL (Volume 1: Long Papers), pages 434–443. ACL, August 2013.
+
+### Attention Visualizations
+
+アテンションの可視化
