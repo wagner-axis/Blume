@@ -83,7 +83,7 @@ To the best of our knowledge, however, the Transformer is the first transduction
 
 ![Figure 1:The Transformer - model architecture.](https://arxiv.org/html/1706.03762v7/Figures/ModalNet-21.png)
 
-Figure 1:The Transformer - model architecture.
+##### Figure 1:The Transformer - model architecture.
 
 図1：Transformer — モデルアーキテクチャ
 
@@ -91,9 +91,9 @@ Most competitive neural sequence transduction models have an encoder-decoder str
 
 高性能なニューラル系列変換モデルの多くは、エンコーダ・デコーダ構造を採用しています [[5]](#5) [[2]](#2) [[35]](#35)。この構造において、エンコーダはシンボル表現の入力系列 $$(x_1, \dots, x_n)$$ を、連続値表現の系列 $$\mathbf{z} = (z_1, \dots, z_n)$$ へと写像します。続いてデコーダは、$$\mathbf{z}$$ を受け取り、シンボルの出力系列 $$(y_1, \dots, y_m)$$ を要素ごとに生成します。各ステップにおいて、このモデルは自己回帰的 [[10]](#10) な性質を持ち、次のシンボルを生成する際に、それまでに生成されたシンボルを追加の入力として利用します。
 
-The Transformer follows this overall architecture using stacked self-attention and point-wise, fully connected layers for both the encoder and decoder, shown in the left and right halves of Figure 1, respectively.
+The Transformer follows this overall architecture using stacked self-attention and point-wise, fully connected layers for both the encoder and decoder, shown in the left and right halves of Figure [1](#figure-1the-transformer---model-architecture), respectively.
 
-Transformerは、図1の左側と右側にそれぞれ示されるエンコーダとデコーダの双方において、積層されたセルフアテンション層とポイントワイズ全結合層を用いた全体的なアーキテクチャを採用しています。
+Transformerは、図[1](#figure-1the-transformer---model-architecture)の左側と右側にそれぞれ示されるエンコーダとデコーダの双方において、積層されたセルフアテンション層とポイントワイズ全結合層を用いた全体的なアーキテクチャを採用しています。
 
 ### 3.1 Encoder and Decoder Stacks
 
@@ -127,7 +127,7 @@ An attention function can be described as mapping a query and a set of key-value
 
 スケーリング付きドット積アテンション
 
-We call our particular attention "Scaled Dot-Product Attention" (Figure 2). The input consists of queries and keys of dimension $$d_k$$, and values of dimension $$d_v$$. We compute the dot products of the query with all keys, divide each by $$\sqrt{d_k}$$, and apply a softmax function to obtain the weights on the values.
+We call our particular attention "Scaled Dot-Product Attention" (Figure [2](#figure-2-left-scaled-dot-product-attention-right-multi-head-attention-consists-of-several-attention-layers-running-in-parallel)). The input consists of queries and keys of dimension $$d_k$$, and values of dimension $$d_v$$. We compute the dot products of the query with all keys, divide each by $$\sqrt{d_k}$$, and apply a softmax function to obtain the weights on the values.
 
 我々が用いるアテンション機構を「スケーリング付きドット積アテンション（Scaled Dot-Product Attention）」（図2）と呼ぶ。入力は、次元数 $$d_k$$ のクエリ（query）およびキー（key）と、次元数 $$d_v$$ の値（value）から構成される。クエリとすべてのキーとの間でドット積を計算し、それぞれを $$\sqrt{d_k}$$ で除算した上で、ソフトマックス関数を適用することで、各値に対する重みを得る。
 
@@ -166,7 +166,7 @@ Multi-Head Attention
 
 ![Multi-Head Attention](https://arxiv.org/html/1706.03762v7/Figures/ModalNet-20.png)
 
-Figure 2: (left) Scaled Dot-Product Attention. (right) Multi-Head Attention consists of several attention layers running in parallel.
+##### Figure 2: (left) Scaled Dot-Product Attention. (right) Multi-Head Attention consists of several attention layers running in parallel.
 
 図2: (左) スケーリング付きドット積アテンション。(右) マルチヘッド・アテンションは、並列に動作する複数のアテンション層から構成される。
 
