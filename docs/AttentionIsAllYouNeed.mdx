@@ -178,9 +178,37 @@ Multi-head attention allows the model to jointly attend to information from diff
 
 マルチヘッド・アテンションを用いると、モデルは異なる位置において、異なる表現部分空間からの情報に同時に（複合的に）注目することができる。単一のアテンションヘッドを用いる場合、平均化が行われてしまうため、このようなことは妨げられてしまう。
 
+$$\text{MultiHead}(Q, K, V) = \text{Concat}(\text{head}_1, \dots, \text{head}_h)W^O$$
+
+where $$\text{head}_i = \text{Attention}(QW_i^Q, KW_i^K, VW_i^V)$$
+
+Where the projections are parameter matrices $$W_i^Q \in \mathbb{R}^{d_{model} \times d_k}$$, $$W_i^K \in \mathbb{R}^{d_{model} \times d_k}$$, $$W_i^V \in \mathbb{R}^{d_{model} \times d_v}$$ and $$W^O \in \mathbb{R}^{h d_v \times d_{model}}$$.
+
+ここで、各射影はパラメータ行列 $$W_i^Q \in \mathbb{R}^{d_{model} \times d_k}$$、$$W_i^K \in \mathbb{R}^{d_{model} \times d_k}$$、$$W_i^V \in \mathbb{R}^{d_{model} \times d_v}$$、および $$W^O \in \mathbb{R}^{h d_v \times d_{model}}$$ によって行われる。
+
+In this work we employ $$h=8$$ parallel attention layers, or heads. For each of these we use $$d_k = d_v = d_{model}/h = 64$$. Due to the reduced dimension of each head, the total computational cost is similar to that of single-head attention with full dimensionality.
+
+本研究では、$$h=8$$ 個の並列アテンション層（ヘッド）を採用する。各ヘッドにおいて、$$d_k = d_v = d_{model}/h = 64$$ とする。各ヘッドの次元数が削減されているため、計算コストの合計は、フル次元の単一ヘッド・アテンションを用いた場合と同程度となる。
+
 #### 3.2.3 Applications of Attention in our Model
 
 本モデルにおけるアテンションの適用
+
+The Transformer uses multi-head attention in three different ways:
+
+Transformerでは、マルチヘッド・アテンションが以下の3通りの方法で使用されます。
+
+* In "encoder-decoder attention" layers, the queries come from the previous decoder layer, and the memory keys and values come from the output of the encoder. This allows every position in the decoder to attend over all positions in the input sequence. This mimics the typical encoder-decoder attention mechanisms in sequence-to-sequence models such as [[38]](#38)[[2]](#2)[[9]](#9).
+
+* 「エンコーダ・デコーダ・アテンション」層では、クエリ（query）はデコーダの前の層から取得され、キー（key）およびバリュー（value）はエンコーダの出力から取得されます。これにより、デコーダ内の各位置は、入力シーケンス内のすべての位置に対してアテンションを向けることができます。これは、[[38]](#38)[[2]](#2)[[9]](#9) といったシーケンス・ツー・シーケンス（sequence-to-sequence）モデルにおける、一般的なエンコーダ・デコーダ・アテンションの仕組みを模したものです。
+
+* The encoder contains self-attention layers. In a self-attention layer all of the keys, values and queries come from the same place, in this case, the output of the previous layer in the encoder. Each position in the encoder can attend to all positions in the previous layer of the encoder.
+
+* エンコーダには、セルフ・アテンション層が含まれています。セルフ・アテンション層では、キー、バリュー、クエリのすべてが同じ場所、すなわちエンコーダ内の前の層の出力から取得されます。エンコーダ内の各位置は、エンコーダの前の層におけるすべての位置に対してアテンションを向けることができます。
+
+* Similarly, self-attention layers in the decoder allow each position in the decoder to attend to all positions in the decoder up to and including that position. We need to prevent leftward information flow in the decoder to preserve the auto-regressive property. We implement this inside of scaled dot-product attention by masking out (setting to −∞) all values in the input of the softmax which correspond to illegal connections. See Figure [2](#figure-2-left-scaled-dot-product-attention-right-multi-head-attention-consists-of-several-attention-layers-running-in-parallel).
+
+* 同様に、デコーダ内のセルフ・アテンション層では、デコーダ内の各位置が、その位置自身を含むそれ以前のすべての位置に対してアテンションを向けることができます。自己回帰的（auto-regressive）な性質を維持するためには、デコーダにおいて情報が左方向（過去の方向）へ流れることを防ぐ必要があります。これを実現するために、スケーリング付きドット積アテンション（scaled dot-product attention）の内部において、許可されていない接続に対応する値をソフトマックス（softmax）の入力段階でマスク（−∞に設定）します。図[2](#figure-2-left-scaled-dot-product-attention-right-multi-head-attention-consists-of-several-attention-layers-running-in-parallel)を参照してください。
 
 ### 3.3 Position-wise Feed-Forward Networks
 
