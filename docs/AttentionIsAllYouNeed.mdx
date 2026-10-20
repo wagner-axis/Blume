@@ -137,13 +137,13 @@ In practice, we compute the attention function on a set of queries simultaneousl
 
 $$\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V \quad \quad (1)$$
 
-The two most commonly used attention functions are additive attention [2], and dot-product (multiplicative) attention. Dot-product attention is identical to our algorithm, except for the scaling factor of $$\frac{1}{\sqrt{d_k}}$$. Additive attention computes the compatibility function using a feed-forward network with a single hidden layer. While the two are similar in theoretical complexity, dot-product attention is much faster and more space-efficient in practice, since it can be implemented using highly optimized matrix multiplication code.
+The two most commonly used attention functions are additive attention [[2]](#2), and dot-product (multiplicative) attention. Dot-product attention is identical to our algorithm, except for the scaling factor of $$\frac{1}{\sqrt{d_k}}$$. Additive attention computes the compatibility function using a feed-forward network with a single hidden layer. While the two are similar in theoretical complexity, dot-product attention is much faster and more space-efficient in practice, since it can be implemented using highly optimized matrix multiplication code.
 
-アテンション関数として最も一般的に用いられるものには、「加法型アテンション（additive attention）[2]」と「ドット積（乗法型）アテンション」の2種類がある。ドット積アテンションは、$$\frac{1}{\sqrt{d_k}}$$ というスケーリング係数を除けば、我々のアルゴリズムと同一である。加法型アテンションでは、単一の隠れ層を持つフィードフォワードネットワークを用いて適合度（compatibility function）を計算する。理論的な計算量は両者で同程度であるが、ドット積アテンションの方が、高度に最適化された行列演算コードを用いて実装できるため、実際にははるかに高速であり、メモリ効率も優れている。
+アテンション関数として最も一般的に用いられるものには、「加法型アテンション（additive attention）[[2]](#2)」と「ドット積（乗法型）アテンション」の2種類がある。ドット積アテンションは、$$\frac{1}{\sqrt{d_k}}$$ というスケーリング係数を除けば、我々のアルゴリズムと同一である。加法型アテンションでは、単一の隠れ層を持つフィードフォワードネットワークを用いて適合度（compatibility function）を計算する。理論的な計算量は両者で同程度であるが、ドット積アテンションの方が、高度に最適化された行列演算コードを用いて実装できるため、実際にははるかに高速であり、メモリ効率も優れている。
 
-While for small values of $$d_k$$ the two mechanisms perform similarly, additive attention outperforms dot product attention without scaling for larger values of dk [3]. We suspect that for large values of dk, the dot products grow large in magnitude, pushing the softmax function into regions where it has extremely small gradients[^1]. To counteract this effect, we scale the dot products by $$\frac{1}{\sqrt{d_k}}$$.
+While for small values of $$d_k$$ the two mechanisms perform similarly, additive attention outperforms dot product attention without scaling for larger values of dk [[3]](#3). We suspect that for large values of dk, the dot products grow large in magnitude, pushing the softmax function into regions where it has extremely small gradients[^1]. To counteract this effect, we scale the dot products by $$\frac{1}{\sqrt{d_k}}$$.
 
-$$d_k$$ が小さい場合には両者の性能は同程度であるが、$$d_k$$ が大きくなると、スケーリングを行わないドット積アテンションよりも加法型アテンションの方が優れた性能を示す[3]ことが知られている。これは、$$d_k$$ が大きい場合、ドット積の値が大きくなりすぎてしまい、ソフトマックス関数の勾配が極めて小さくなる領域に押しやられてしまうためだと考えられる。この影響を打ち消すために、ドット積を $$\frac{1}{\sqrt{d_k}}$$ でスケーリングする。
+$$d_k$$ が小さい場合には両者の性能は同程度であるが、$$d_k$$ が大きくなると、スケーリングを行わないドット積アテンションよりも加法型アテンションの方が優れた性能を示す[[3]](#3)ことが知られている。これは、$$d_k$$ が大きい場合、ドット積の値が大きくなりすぎてしまい、ソフトマックス関数の勾配が極めて小さくなる領域に押しやられてしまうためだと考えられる[^1]。この影響を打ち消すために、ドット積を $$\frac{1}{\sqrt{d_k}}$$ でスケーリングする。
 
 #### 3.2.2 Multi-Head Attention
 
