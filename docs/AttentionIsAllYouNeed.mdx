@@ -129,7 +129,7 @@ An attention function can be described as mapping a query and a set of key-value
 
 We call our particular attention "Scaled Dot-Product Attention" (Figure [2](#figure-2-left-scaled-dot-product-attention-right-multi-head-attention-consists-of-several-attention-layers-running-in-parallel)). The input consists of queries and keys of dimension $$d_k$$, and values of dimension $$d_v$$. We compute the dot products of the query with all keys, divide each by $$\sqrt{d_k}$$, and apply a softmax function to obtain the weights on the values.
 
-我々が用いるアテンション機構を「スケーリング付きドット積アテンション（Scaled Dot-Product Attention）」（図2）と呼ぶ。入力は、次元数 $$d_k$$ のクエリ（query）およびキー（key）と、次元数 $$d_v$$ の値（value）から構成される。クエリとすべてのキーとの間でドット積を計算し、それぞれを $$\sqrt{d_k}$$ で除算した上で、ソフトマックス関数を適用することで、各値に対する重みを得る。
+我々が用いるアテンション機構を「スケーリング付きドット積アテンション（Scaled Dot-Product Attention）」（図[2](#figure-2-left-scaled-dot-product-attention-right-multi-head-attention-consists-of-several-attention-layers-running-in-parallel)）と呼ぶ。入力は、次元数 $$d_k$$ のクエリ（query）およびキー（key）と、次元数 $$d_v$$ の値（value）から構成される。クエリとすべてのキーとの間でドット積を計算し、それぞれを $$\sqrt{d_k}$$ で除算した上で、ソフトマックス関数を適用することで、各値に対する重みを得る。
 
 In practice, we compute the attention function on a set of queries simultaneously, packed together into a matrix $$Q$$. The keys and values are also packed together into matrices $$K$$ and $$V$$. We compute the matrix of outputs as:
 	
@@ -169,6 +169,14 @@ Multi-Head Attention
 ##### Figure 2: (left) Scaled Dot-Product Attention. (right) Multi-Head Attention consists of several attention layers running in parallel.
 
 図2: (左) スケーリング付きドット積アテンション。(右) マルチヘッド・アテンションは、並列に動作する複数のアテンション層から構成される。
+
+Instead of performing a single attention function with dmodel-dimensional keys, values and queries, we found it beneficial to linearly project the queries, keys and values $$h$$ times with different, learned linear projections to $$d_k$$, $$d_k$$ and $$d_v$$ dimensions, respectively. On each of these projected versions of queries, keys and values we then perform the attention function in parallel, yielding dv-dimensional output values. These are concatenated and once again projected, resulting in the final values, as depicted in Figure [2](#figure-2-left-scaled-dot-product-attention-right-multi-head-attention-consists-of-several-attention-layers-running-in-parallel).
+
+$$d_{model}$$ 次元のキー、バリュー、クエリを用いて単一のアテンション関数を実行する代わりに、クエリ、キー、バリューをそれぞれ異なる学習可能な線形写像によって $$h$$ 回線形射影し、$$d_k$$、$$d_k$$、$$d_v$$ 次元の空間へ写像する方が有効であることがわかった。こうして射影されたクエリ、キー、バリューの各セットに対して並列にアテンション関数を適用することで、$$d_v$$ 次元の出力値が得られる。これらを連結（結合）した上で再度線形射影を行うことで、最終的な値が得られる。この過程を図[2](#figure-2-left-scaled-dot-product-attention-right-multi-head-attention-consists-of-several-attention-layers-running-in-parallel)に示す。
+
+Multi-head attention allows the model to jointly attend to information from different representation subspaces at different positions. With a single attention head, averaging inhibits this.
+
+マルチヘッド・アテンションを用いると、モデルは異なる位置において、異なる表現部分空間からの情報に同時に（複合的に）注目することができる。単一のアテンションヘッドを用いる場合、平均化が行われてしまうため、このようなことは妨げられてしまう。
 
 #### 3.2.3 Applications of Attention in our Model
 
