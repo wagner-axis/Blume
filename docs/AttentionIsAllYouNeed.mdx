@@ -214,13 +214,47 @@ Transformerでは、マルチヘッド・アテンションが以下の3通り�
 
 位置ごとのフィードフォワード・ネットワーク
 
+In addition to attention sub-layers, each of the layers in our encoder and decoder contains a fully connected feed-forward network, which is applied to each position separately and identically. This consists of two linear transformations with a ReLU activation in between.
+
+エンコーダおよびデコーダの各層には、アテンション・サブレイヤーに加えて、全結合フィードフォワード・ネットワークが含まれている。これは各位置に対して独立かつ同一に適用される。このネットワークは、2回の線形変換と、その間にあるReLU活性化関数で構成されている。
+	
+$$\text{FFN}(x) = \max(0, xW_1 + b_1)W_2 + b_2$$		(2)
+
+While the linear transformations are the same across different positions, they use different parameters from layer to layer. Another way of describing this is as two convolutions with kernel size 1. The dimensionality of input and output is $$d_{model}=512$$, and the inner-layer has dimensionality $$d_{ff}=2048$$.
+
+線形変換は各位置で共通であるが、層ごとに異なるパラメータが使用される。これを別の言い方で表現すると、カーネルサイズ1の畳み込みを2回行うことになります。入出力の次元数は $$d_{model}=512$$ であり、中間層の次元数は $$d_{ff}=2048$$ です。
+
 ### 3.4 Embeddings and Softmax
 
 埋め込みとソフトマックス
 
+Similarly to other sequence transduction models, we use learned embeddings to convert the input tokens and output tokens to vectors of dimension $$d_{\text{model}}$$. We also use the usual learned linear transformation and softmax function to convert the decoder output to predicted next-token probabilities. In our model, we share the same weight matrix between the two embedding layers and the pre-softmax linear transformation, similar to [[30]](#30). In the embedding layers, we multiply those weights by $$\sqrt{d_{\text{model}}}$$.
+
+他の系列変換モデルと同様に、我々は学習済みの埋め込みを用いて、入力トークンおよび出力トークンを $$d_{\text{model}}$$ 次元のベクトルに変換する。また、一般的な学習済みの線形変換とソフトマックス関数を用いて、デコーダの出力を、次に続くトークンの予測確率へと変換する。本モデルでは、[[30]](#30) と同様に、2つの埋め込み層とソフトマックス適用前の線形変換の間で、同一の重み行列を共有する。埋め込み層においては、これらの重みに $$\sqrt{d_{\text{model}}}$$ を乗じる。
+
 ### 3.5 Positional Encoding
 
 位置エンコーディング
+
+Since our model contains no recurrence and no convolution, in order for the model to make use of the order of the sequence, we must inject some information about the relative or absolute position of the tokens in the sequence. To this end, we add "positional encodings" to the input embeddings at the bottoms of the encoder and decoder stacks. The positional encodings have the same dimension dmodel as the embeddings, so that the two can be summed. There are many choices of positional encodings, learned and fixed [[9]](#9).
+
+本モデルには再帰構造や畳み込み構造が含まれていないため、シーケンス内の順序情報を活用するには、トークンの相対的あるいは絶対的な位置に関する情報を何らかの形で組み込む必要がある。この目的のため、エンコーダおよびデコーダスタックの最下層において、入力埋め込み（input embeddings）に「位置エンコーディング（positional encodings）」を加算する。位置エンコーディングは埋め込みと同じ次元数 $$d_{model}$$ を持つため、両者を加算することが可能である。位置エンコーディングには、学習によって獲得するものや固定されたものなど、さまざまな選択肢が存在する[[9]](#9)。
+
+In this work, we use sine and cosine functions of different frequencies:
+
+本研究では、異なる周波数を持つ正弦関数（サイン関数）および余弦関数（コサイン関数）を用いる。
+
+$$PE_{(pos, 2i)} = \sin(pos / 10000^{2i/d_{model}})$$
+
+$$PE_{(pos, 2i+1)} = \cos(pos / 10000^{2i/d_{model}})$$
+
+where pos is the position and $$i$$ is the dimension. That is, each dimension of the positional encoding corresponds to a sinusoid. The wavelengths form a geometric progression from $$2\pi$$ to $$10000 \cdot 2\pi$$. We chose this function because we hypothesized it would allow the model to easily learn to attend by relative positions, since for any fixed offset $$k$$, $$PE_{pos+k}$$ can be represented as a linear function of $$PE_{pos}$$.
+
+ここで、$$pos$$ は位置を、$$i$$ は次元を表す。すなわち、位置エンコーディングの各次元は正弦波に対応している。波長は $$2\pi$$ から $$10000 \cdot 2\pi$$ まで、等比数列を成すように設定されている。この関数を採用した理由は、任意の固定されたオフセット $$k$$ に対して、$$PE_{pos+k}$$ を $$PE_{pos}$$ の線形関数として表現できるため、モデルが相対的な位置に基づいてアテンション（注意）を向けることを容易に学習できると仮定したからである。
+
+We also experimented with using learned positional embeddings [[9]](#9) instead, and found that the two versions produced nearly identical results (see Table 3 row (E)). We chose the sinusoidal version because it may allow the model to extrapolate to sequence lengths longer than the ones encountered during training.
+
+また、学習可能な位置埋め込み（learned positional embeddings）[[9]](#9) を用いる手法についても実験を行ったが、両者の結果はほぼ同等であった（表3の行(E)を参照）。正弦波を用いた手法を採用したのは、これによって、モデルが学習時に遭遇したシーケンス長よりも長いシーケンスに対しても、外挿（extrapolation）が可能になるかもしれないと考えたためである。
 
 ## 4 Why Self-Attention
 
