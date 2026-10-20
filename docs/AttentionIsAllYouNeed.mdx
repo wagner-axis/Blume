@@ -143,7 +143,7 @@ The two most commonly used attention functions are additive attention [[2]](#2),
 
 While for small values of $$d_k$$ the two mechanisms perform similarly, additive attention outperforms dot product attention without scaling for larger values of dk [[3]](#3). We suspect that for large values of dk, the dot products grow large in magnitude, pushing the softmax function into regions where it has extremely small gradients[^1]. To counteract this effect, we scale the dot products by $$\frac{1}{\sqrt{d_k}}$$.
 
-$$d_k$$ が小さい場合には両者の性能は同程度であるが、$$d_k$$ が大きくなると、スケーリングを行わないドット積アテンションよりも加法型アテンションの方が優れた性能を示す[[3]](#3)ことが知られている。これは、$$d_k$$ が大きい場合、ドット積の値が大きくなりすぎてしまい、ソフトマックス関数の勾配が極めて小さくなる領域に押しやられてしまうためだと考えられる[^1]。この影響を打ち消すために、ドット積を $$\frac{1}{\sqrt{d_k}}$$ でスケーリングする。
+$$d_k$$ が小さい場合には両者の性能は同程度であるが、$$d_k$$ が大きくなると、スケーリングを行わないドット積アテンションよりも加法型アテンションの方が優れた性能を示す[[3]](#3)ことが知られている。これは、$$d_k$$ が大きい場合、ドット積の値が大きくなりすぎてしまい、ソフトマックス関数の勾配が極めて小さくなる領域に押しやられてしまうためだと考えられる[^11]。この影響を打ち消すために、ドット積を $$\frac{1}{\sqrt{d_k}}$$ でスケーリングする。
 
 #### 3.2.2 Multi-Head Attention
 
@@ -515,5 +515,5 @@ In Proceedings of the 51st Annual Meeting of the ACL (Volume 1: Long Papers), pa
 
 [^1]: To illustrate why the dot products get large, assume that the components of $$q$$ and $$k$$ are independent random variables with mean 0 and variance 1. Then their dot product, $$q \cdot k = \sum_{i=1}^{d_k} q_i k_i$$, has mean 0 and variance $$d_k$$..
 
-1. ドット積が大きくなる理由を説明するために、$$q$$ および $$k$$ の各成分が、平均0、分散1の独立な確率変数であると仮定する。このとき、それらのドット積 $$q \cdot k = \sum_{i=1}^{d_k} q_i k_i$$ は、平均0、分散 $$d_k$$ となる。
+[^11]: ドット積が大きくなる理由を説明するために、$$q$$ および $$k$$ の各成分が、平均0、分散1の独立な確率変数であると仮定する。このとき、それらのドット積 $$q \cdot k = \sum_{i=1}^{d_k} q_i k_i$$ は、平均0、分散 $$d_k$$ となる。
 
