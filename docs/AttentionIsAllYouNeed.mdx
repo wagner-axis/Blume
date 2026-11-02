@@ -252,9 +252,9 @@ where pos is the position and $$i$$ is the dimension. That is, each dimension of
 
 ここで、$$pos$$ は位置を、$$i$$ は次元を表す。すなわち、位置エンコーディングの各次元は正弦波に対応している。波長は $$2\pi$$ から $$10000 \cdot 2\pi$$ まで、等比数列を成すように設定されている。この関数を採用した理由は、任意の固定されたオフセット $$k$$ に対して、$$PE_{pos+k}$$ を $$PE_{pos}$$ の線形関数として表現できるため、モデルが相対的な位置に基づいてアテンション（注意）を向けることを容易に学習できると仮定したからである。
 
-We also experimented with using learned positional embeddings [[9]](#9) instead, and found that the two versions produced nearly identical results (see Table 3 row (E)). We chose the sinusoidal version because it may allow the model to extrapolate to sequence lengths longer than the ones encountered during training.
+We also experimented with using learned positional embeddings [[9]](#9) instead, and found that the two versions produced nearly identical results (see Table [3](#table-3-variations-on-the-transformer-architecture) row (E)). We chose the sinusoidal version because it may allow the model to extrapolate to sequence lengths longer than the ones encountered during training.
 
-また、学習可能な位置埋め込み（learned positional embeddings）[[9]](#9) を用いる手法についても実験を行ったが、両者の結果はほぼ同等であった（表3の行(E)を参照）。正弦波を用いた手法を採用したのは、これによって、モデルが学習時に遭遇したシーケンス長よりも長いシーケンスに対しても、外挿（extrapolation）が可能になるかもしれないと考えたためである。
+また、学習可能な位置埋め込み（learned positional embeddings）[[9]](#9) を用いる手法についても実験を行ったが、両者の結果はほぼ同等であった（表[3](#table-3-variations-on-the-transformer-architecture)の行(E)を参照）。正弦波を用いた手法を採用したのは、これによって、モデルが学習時に遭遇したシーケンス長よりも長いシーケンスに対しても、外挿（extrapolation）が可能になるかもしれないと考えたためである。
 
 ## 4 Why Self-Attention
 
@@ -300,6 +300,14 @@ We also experimented with using learned positional embeddings [[9]](#9) instead,
 
 モデルのバリエーション
 
+##### Table 3: Variations on the Transformer architecture.
+
+表3：Transformerアーキテクチャのバリエーション。
+
+Unlisted values are identical to those of the base model. All metrics are on the English-to-German translation development set, newstest2013. Listed perplexities are per-wordpiece, according to our byte-pair encoding, and should not be compared to per-word perplexities.
+
+記載のない値は、ベースモデルと同一である。すべての指標は、英語からドイツ語への翻訳における開発セット「newstest2013」を用いて算出されたものである。ここに記載したパープレキシティは、我々が採用したバイトペアエンコーディング（BPE）に基づく「ワードピース（wordpiece）あたりの値」であり、単語単位のパープレキシティと比較すべきではない。
+
 ||$$N$$|$$d_{\text{model}}$$|$$d_{\text{ff}}$$|$$h$$|$$d_{\text{k}}$$|$$d_{\text{v}}$$|$$P_{\text{d​r​o​p}}$$|$$ϵ_{\text{l​s}}$$|train steps|PPL(dev)|BLEU(dev)|params $$×10^{6}$$|
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 |base|6|512|2048|8|64|64|0.1|0.1|100K|4.92|25.8|65|
@@ -324,6 +332,18 @@ We also experimented with using learned positional embeddings [[9]](#9) instead,
 |big|6|1024|4096|16|||0.3||300K|**4.33**|**26.4**|213|
 
 ※１．positional embedding instead of sinusoids
+
+To evaluate the importance of different components of the Transformer, we varied our base model in different ways, measuring the change in performance on English-to-German translation on the development set, newstest2013. We used beam search as described in the previous section, but no checkpoint averaging. We present these results in Table 3.
+
+Transformerの各構成要素の重要性を評価するため、ベースモデルに様々な変更を加え、開発セットである「newstest2013」を用いた英独翻訳タスクにおける性能の変化を測定した。なお、前節で述べたビームサーチを用いたが、チェックポイントの平均化（checkpoint averaging）は行っていない。これらの結果を表3に示す。
+
+In Table 3 rows (A), we vary the number of attention heads and the attention key and value dimensions, keeping the amount of computation constant, as described in Section 3.2.2. While single-head attention is 0.9 BLEU worse than the best setting, quality also drops off with too many heads.
+
+表3の(A)では、セクション3.2.2で説明した通り、計算量を一定に保ったまま、アテンションヘッドの数、およびアテンションにおけるキー（key）とバリュー（value）の次元数を変化させた。シングルヘッドのアテンションは、最良の設定と比較してBLEUスコアが0.9低い。また、ヘッド数が多すぎても品質が低下することが確認された。
+
+In Table 3 rows (B), we observe that reducing the attention key size $d_k$ hurts model quality. This suggests that determining compatibility is not easy and that a more sophisticated compatibility function than dot product may be beneficial. We further observe in rows (C) and (D) that, as expected, bigger models are better, and dropout is very helpful in avoiding over-fitting. In row (E) we replace our sinusoidal positional encoding with learned positional embeddings [9], and observe nearly identical results to the base model.
+
+表3の(B)からは、アテンションのキーの次元数 $d_k$ を小さくすると、モデルの品質が低下することがわかる。このことは、適合性（compatibility）の判定が容易ではないことを示唆しており、ドット積よりも洗練された適合性関数の方が有効である可能性がある。さらに(C)および(D)の結果から、予想通りモデルが大規模であるほど性能が向上すること、そしてドロップアウトが過学習の抑制に非常に有効であることが確認できる。行(E)では、正弦波を用いた位置エンコーディング（sinusoidal positional encoding）を学習可能な位置埋め込み（learned positional embeddings）[9]に置き換えたが、ベースモデルとほぼ同等の結果が得られた。
 
 ### 6.3 English Constituency Parsing
 
