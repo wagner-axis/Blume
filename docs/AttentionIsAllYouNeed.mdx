@@ -260,6 +260,18 @@ We also experimented with using learned positional embeddings [[9]](#9) instead,
 
 なぜセルフアテンションなのか
 
+In this section we compare various aspects of self-attention layers to the recurrent and convolutional layers commonly used for mapping one variable-length sequence of symbol representations $$(x_1, \dots, x_n)$$ to another sequence of equal length $$(z_1, \dots, z_n)$$, with $$x_i, z_i \in \mathbb{R}^d$$, such as a hidden layer in a typical sequence transduction encoder or decoder. Motivating our use of self-attention we consider three desiderata.
+
+本節では、自己注意（セルフアテンション）層の様々な側面を、再帰型層や畳み込み層と比較する。これらの層は、ある可変長の記号表現系列 $$(x_1, \dots, x_n)$$ を、同じ長さの別の系列 $$(z_1, \dots, z_n)$$ （ここで $$x_i, z_i \in \mathbb{R}^d$$）へと写像するために一般的に用いられるものであり、典型的な系列変換（シーケンス・トランスダクション）モデルにおけるエンコーダやデコーダの隠れ層などがその例である。自己注意機構を採用する動機として、我々は3つの望ましい特性を考慮する。
+
+One is the total computational complexity per layer. Another is the amount of computation that can be parallelized, as measured by the minimum number of sequential operations required.
+
+1つ目は、層あたりの総計算量である。2つ目は、並列化可能な計算量であり、これは必要な逐次演算の最小回数によって測定される。
+
+The third is the path length between long-range dependencies in the network. Learning long-range dependencies is a key challenge in many sequence transduction tasks. One key factor affecting the ability to learn such dependencies is the length of the paths forward and backward signals have to traverse in the network. The shorter these paths between any combination of positions in the input and output sequences, the easier it is to learn long-range dependencies [[12]](#12). Hence we also compare the maximum path length between any two input and output positions in networks composed of the different layer types.
+
+3つ目は、ネットワーク内における長距離依存関係間のパス長である。長距離依存関係の学習は、多くの系列変換タスクにおいて重要な課題である。こうした依存関係を学習する能力に影響を与える重要な要因の一つが、ネットワーク内で順方向および逆方向の信号がたどるパスの長さである。入出力系列上の任意の2つの位置を結ぶパスが短ければ短いほど、長距離依存関係の学習は容易になる [[12]](#12)。したがって、我々は、異なる種類の層で構成されたネットワークにおいて、入出力系列上の任意の2点間を結ぶパスの最大長についても比較を行う。
+
 ## 5 Training
 
 学習
@@ -308,7 +320,7 @@ Unlisted values are identical to those of the base model. All metrics are on the
 
 記載のない値は、ベースモデルと同一である。すべての指標は、英語からドイツ語への翻訳における開発セット「newstest2013」を用いて算出されたものである。ここに記載したパープレキシティは、我々が採用したバイトペアエンコーディング（BPE）に基づく「ワードピース（wordpiece）あたりの値」であり、単語単位のパープレキシティと比較すべきではない。
 
-||$$N$$|$$d_{\text{model}}$$|$$d_{\text{ff}}$$|$$h$$|$$d_{\text{k}}$$|$$d_{\text{v}}$$|$$P_{\text{d​r​o​p}}$$|$$ϵ_{\text{l​s}}$$|train steps|PPL(dev)|BLEU(dev)|params $$×10^{6}$$|
+||$$N$$|$$d_{\text{model}}$$|$$d_{\text{ff}}$$|$$h$$|$$d_{\text{k}}$$|$$d_{\text{v}}$$|$$P_{\text{d​r​o​p}}$$|$$\epsilon_{ls}$$|train steps|PPL(dev)|BLEU(dev)|params $$×10^{6}$$|
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 |base|6|512|2048|8|64|64|0.1|0.1|100K|4.92|25.8|65|
 |(A)||||1|512|512||||5.29|24.9||
