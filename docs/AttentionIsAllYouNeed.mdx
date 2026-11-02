@@ -333,6 +333,8 @@ Unlisted values are identical to those of the base model. All metrics are on the
 
 ※１．positional embedding instead of sinusoids
 
+※１．正弦波の代わりに位置埋め込みを用いる
+
 To evaluate the importance of different components of the Transformer, we varied our base model in different ways, measuring the change in performance on English-to-German translation on the development set, newstest2013. We used beam search as described in the previous section, but no checkpoint averaging. We present these results in Table [3](#table-3-variations-on-the-transformer-architecture).
 
 Transformerの各構成要素の重要性を評価するため、ベースモデルに様々な変更を加え、開発セットである「newstest2013」を用いた英独翻訳タスクにおける性能の変化を測定した。なお、前節で述べたビームサーチを用いたが、チェックポイントの平均化（checkpoint averaging）は行っていない。これらの結果を表[3](#table-3-variations-on-the-transformer-architecture)に示す。
