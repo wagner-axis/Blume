@@ -272,6 +272,17 @@ The third is the path length between long-range dependencies in the network. Lea
 
 3つ目は、ネットワーク内における長距離依存関係間のパス長である。長距離依存関係の学習は、多くの系列変換タスクにおいて重要な課題である。こうした依存関係を学習する能力に影響を与える重要な要因の一つが、ネットワーク内で順方向および逆方向の信号がたどるパスの長さである。入出力系列上の任意の2つの位置を結ぶパスが短ければ短いほど、長距離依存関係の学習は容易になる [[12]](#12)。したがって、我々は、異なる種類の層で構成されたネットワークにおいて、入出力系列上の任意の2点間を結ぶパスの最大長についても比較を行う。
 
+Table 1: Maximum path lengths, per-layer complexity and minimum number of sequential operations for different layer types. $$n$$ is the sequence length, $$d$$ is the representation dimension, $$k$$ is the kernel size of convolutions and $$r$$ the size of the neighborhood in restricted self-attention.
+
+表1：異なる層タイプにおける最大パス長、層あたりの計算量、および逐次演算の最小回数。ここで、$$n$$ は系列長、$$d$$ は表現の次元数、$$k$$ は畳み込みのカーネルサイズ、$$r$$ は制限付きセルフアテンションにおける近傍範囲のサイズを表す。
+
+|Layer Type|Complexity per Layer|Sequential Operations|Maximum Path Length|
+| :---: | :---: | :---: | :---: |
+|Self-Attention|$$O(n^2 \cdot d)$$|$$O(1)$$|$$O(1)$$|
+|Recurrent|$$O(n \cdot d^2)$$|$$O(n)$$|$$O(n)$$|
+|Convolutional|$$O(k \cdot n \cdot d^2)$$|$$O(1)$$|$$O(\log_k(n))$$|
+|Self-Attention (restricted)|$$O(r \cdot n \cdot d)$$|$$O(1)$$|$$O(n/r)$$|
+
 ## 5 Training
 
 学習
