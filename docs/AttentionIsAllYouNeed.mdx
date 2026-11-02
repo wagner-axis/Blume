@@ -333,17 +333,17 @@ Unlisted values are identical to those of the base model. All metrics are on the
 
 ※１．positional embedding instead of sinusoids
 
-To evaluate the importance of different components of the Transformer, we varied our base model in different ways, measuring the change in performance on English-to-German translation on the development set, newstest2013. We used beam search as described in the previous section, but no checkpoint averaging. We present these results in Table 3.
+To evaluate the importance of different components of the Transformer, we varied our base model in different ways, measuring the change in performance on English-to-German translation on the development set, newstest2013. We used beam search as described in the previous section, but no checkpoint averaging. We present these results in Table [3](#table-3-variations-on-the-transformer-architecture).
 
-Transformerの各構成要素の重要性を評価するため、ベースモデルに様々な変更を加え、開発セットである「newstest2013」を用いた英独翻訳タスクにおける性能の変化を測定した。なお、前節で述べたビームサーチを用いたが、チェックポイントの平均化（checkpoint averaging）は行っていない。これらの結果を表3に示す。
+Transformerの各構成要素の重要性を評価するため、ベースモデルに様々な変更を加え、開発セットである「newstest2013」を用いた英独翻訳タスクにおける性能の変化を測定した。なお、前節で述べたビームサーチを用いたが、チェックポイントの平均化（checkpoint averaging）は行っていない。これらの結果を表[3](#table-3-variations-on-the-transformer-architecture)に示す。
 
-In Table 3 rows (A), we vary the number of attention heads and the attention key and value dimensions, keeping the amount of computation constant, as described in Section 3.2.2. While single-head attention is 0.9 BLEU worse than the best setting, quality also drops off with too many heads.
+In Table [3](#table-3-variations-on-the-transformer-architecture) rows (A), we vary the number of attention heads and the attention key and value dimensions, keeping the amount of computation constant, as described in Section [3.2.2](#322-multi-head-attention). While single-head attention is 0.9 BLEU worse than the best setting, quality also drops off with too many heads.
 
-表3の(A)では、セクション3.2.2で説明した通り、計算量を一定に保ったまま、アテンションヘッドの数、およびアテンションにおけるキー（key）とバリュー（value）の次元数を変化させた。シングルヘッドのアテンションは、最良の設定と比較してBLEUスコアが0.9低い。また、ヘッド数が多すぎても品質が低下することが確認された。
+表[3](#table-3-variations-on-the-transformer-architecture)の(A)では、セクション [3.2.2](#322-multi-head-attention) で説明した通り、計算量を一定に保ったまま、アテンションヘッドの数、およびアテンションにおけるキー（key）とバリュー（value）の次元数を変化させた。シングルヘッドのアテンションは、最良の設定と比較してBLEUスコアが0.9低い。また、ヘッド数が多すぎても品質が低下することが確認された。
 
-In Table 3 rows (B), we observe that reducing the attention key size $d_k$ hurts model quality. This suggests that determining compatibility is not easy and that a more sophisticated compatibility function than dot product may be beneficial. We further observe in rows (C) and (D) that, as expected, bigger models are better, and dropout is very helpful in avoiding over-fitting. In row (E) we replace our sinusoidal positional encoding with learned positional embeddings [9], and observe nearly identical results to the base model.
+In Table [3](#table-3-variations-on-the-transformer-architecture) rows (B), we observe that reducing the attention key size $$d_k$$ hurts model quality. This suggests that determining compatibility is not easy and that a more sophisticated compatibility function than dot product may be beneficial. We further observe in rows (C) and (D) that, as expected, bigger models are better, and dropout is very helpful in avoiding over-fitting. In row (E) we replace our sinusoidal positional encoding with learned positional embeddings [[9]](#9), and observe nearly identical results to the base model.
 
-表3の(B)からは、アテンションのキーの次元数 $d_k$ を小さくすると、モデルの品質が低下することがわかる。このことは、適合性（compatibility）の判定が容易ではないことを示唆しており、ドット積よりも洗練された適合性関数の方が有効である可能性がある。さらに(C)および(D)の結果から、予想通りモデルが大規模であるほど性能が向上すること、そしてドロップアウトが過学習の抑制に非常に有効であることが確認できる。行(E)では、正弦波を用いた位置エンコーディング（sinusoidal positional encoding）を学習可能な位置埋め込み（learned positional embeddings）[9]に置き換えたが、ベースモデルとほぼ同等の結果が得られた。
+表[3](#table-3-variations-on-the-transformer-architecture)の(B)からは、アテンションのキーの次元数 $$d_k$$ を小さくすると、モデルの品質が低下することがわかる。このことは、適合性（compatibility）の判定が容易ではないことを示唆しており、ドット積よりも洗練された適合性関数の方が有効である可能性がある。さらに(C)および(D)の結果から、予想通りモデルが大規模であるほど性能が向上すること、そしてドロップアウトが過学習の抑制に非常に有効であることが確認できる。行(E)では、正弦波を用いた位置エンコーディング（sinusoidal positional encoding）を学習可能な位置埋め込み（learned positional embeddings）[[9]](#9) に置き換えたが、ベースモデルとほぼ同等の結果が得られた。
 
 ### 6.3 English Constituency Parsing
 
