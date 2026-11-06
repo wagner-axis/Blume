@@ -303,29 +303,63 @@ As side benefit, self-attention could yield more interpretable models. We inspec
 
 学習
 
+This section describes the training regime for our models.
+
+本節では、我々のモデルの学習体制について説明する。
+
 ### 5.1 Training Data and Batching
 
 学習データとバッチ処理
+
+We trained on the standard WMT 2014 English-German dataset consisting of about 4.5 million sentence pairs. Sentences were encoded using byte-pair encoding [[3]](#3), which has a shared source-target vocabulary of about 37000 tokens. For English-French, we used the significantly larger WMT 2014 English-French dataset consisting of 36M sentences and split tokens into a 32000 word-piece vocabulary [[38]](#38). Sentence pairs were batched together by approximate sequence length. Each training batch contained a set of sentence pairs containing approximately 25000 source tokens and 25000 target tokens.
+
+我々は、約450万の文ペアからなる標準的なWMT 2014英独データセットを用いて学習を行った。文のエンコードにはバイトペアエンコーディング（BPE）[[3]](#3)を用い、ソース言語とターゲット言語で共有される約37,000トークンの語彙を使用した。英仏言語ペアについては、より大規模なWMT 2014英仏データセット（3,600万文）を使用し、トークンを32,000個の「ワードピース（word-piece）」からなる語彙へと分割した[[38]](#38)。文ペアは、シーケンス長がおおよそ同じもの同士でバッチ化された。各学習バッチには、ソース言語のトークン約25,000個分およびターゲット言語のトークン約25,000個分に相当する文ペアが含まれている。
 
 ### 5.2 Hardware and Schedule
 
 ハードウェアとスケジュール
 
+We trained our models on one machine with 8 NVIDIA P100 GPUs. For our base models using the hyperparameters described throughout the paper, each training step took about 0.4 seconds. We trained the base models for a total of 100,000 steps or 12 hours. For our big models,(described on the bottom line of table [3](#table-3-variations-on-the-transformer-architecture)), step time was 1.0 seconds. The big models were trained for 300,000 steps (3.5 days).
+
+モデルの学習は、NVIDIA P100 GPUを8基搭載したマシン1台を用いて行った。論文全体を通じて記載されているハイパーパラメータを用いたベースモデルの場合、1ステップあたりの学習時間は約0.4秒であった。ベースモデルの学習は、合計10万ステップ（12時間）にわたって実施した。また、（表[3](#table-3-variations-on-the-transformer-architecture)の最下段に記載されている）大規模モデルについては、1ステップあたりの学習時間は1.0秒であった。この大規模モデルは、30万ステップ（3.5日間）にわたって学習を行った。
+
 ### 5.3 Optimizer
 
 最適化手法
+
+We used the Adam optimizer [[20]](#20) with $$\beta_1=0.9, \beta_2=0.98, \epsilon=10^{-9}$$. We varied the learning rate over the course of training, according to the formula:
+	
+最適化手法にはAdam [[20]](#20) を使用し、ハイパーパラメータは $$\beta_1=0.9, \beta_2=0.98, \epsilon=10^{-9}$$ とした。学習の過程において、学習率（learning rate）を以下の式に従って変化させた。
+
+$$lrate = d_{model}^{-0.5} \cdot \min(step\_num^{-0.5}, step\_num \cdot warmup\_steps^{-1.5}) (3)$$
+
+This corresponds to increasing the learning rate linearly for the first $$warmup\_steps$$ training steps, and decreasing it thereafter proportionally to the inverse square root of the step number. We used $$warmup\_steps = 4000$$.
+
+これは、最初の $$warmup\_steps$$ ステップ間は学習率を線形に増加させ、それ以降はステップ数の逆平方根に比例して学習率を減少させることに相当する。なお、$$warmup\_steps = 4000$$ とした。
 
 ### 5.4 Regularization
 
 正則化
 
+We employ three types of regularization during training:
+
+学習時には、以下の3種類の正則化手法を用いる。
+
 #### Residual Dropout
 
 残差ドロップアウト
 
+We apply dropout [[33]](#33) to the output of each sub-layer, before it is added to the sub-layer input and normalized. In addition, we apply dropout to the sums of the embeddings and the positional encodings in both the encoder and decoder stacks. For the base model, we use a rate of $$P_{drop} = 0.1$$.
+
+各サブレイヤーの出力に対してドロップアウト [[33]](#33) を適用する。このドロップアウトは、出力がサブレイヤーの入力に加算され、正規化される前に行われる。さらに、エンコーダーおよびデコーダーのスタックにおいて、埋め込み（embeddings）と位置エンコーディング（positional encodings）の和に対してもドロップアウトを適用する。ベースモデルでは、ドロップアウト率 $$P_{drop} = 0.1$$ を使用する。
+
 #### Label Smoothing
 
 ラベルスムージング
+
+During training, we employed label smoothing of value $$\epsilon_{ls} = 0.1$$ [[36]](#36). This hurts perplexity, as the model learns to be more unsure, but improves accuracy and BLEU score.
+
+学習中、$$\epsilon_{ls} = 0.1$$ の値を用いたラベル平滑化 [[36]](#36) を適用する。ラベル平滑化は、モデルが予測に対してより確信を持てなくなる（不確実性が高まる）ため、パープレキシティ（perplexity）の観点からは悪影響を及ぼすが、精度およびBLEUスコアは向上する。
 
 ## 6 Results
 
