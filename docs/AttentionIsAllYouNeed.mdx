@@ -272,9 +272,13 @@ The third is the path length between long-range dependencies in the network. Lea
 
 3つ目は、ネットワーク内における長距離依存関係間のパス長である。長距離依存関係の学習は、多くの系列変換タスクにおいて重要な課題である。こうした依存関係を学習する能力に影響を与える重要な要因の一つが、ネットワーク内で順方向および逆方向の信号がたどるパスの長さである。入出力系列上の任意の2つの位置を結ぶパスが短ければ短いほど、長距離依存関係の学習は容易になる [[12]](#12)。したがって、我々は、異なる種類の層で構成されたネットワークにおいて、入出力系列上の任意の2点間を結ぶパスの最大長についても比較を行う。
 
-Table 1: Maximum path lengths, per-layer complexity and minimum number of sequential operations for different layer types. $$n$$ is the sequence length, $$d$$ is the representation dimension, $$k$$ is the kernel size of convolutions and $$r$$ the size of the neighborhood in restricted self-attention.
+##### Table 1: Maximum path lengths, per-layer complexity and minimum number of sequential operations for different layer types.
 
-表1：異なる層タイプにおける最大パス長、層あたりの計算量、および逐次演算の最小回数。ここで、$$n$$ は系列長、$$d$$ は表現の次元数、$$k$$ は畳み込みのカーネルサイズ、$$r$$ は制限付きセルフアテンションにおける近傍範囲のサイズを表す。
+表1：異なる層タイプにおける最大パス長、層あたりの計算量、および逐次演算の最小回数。
+
+$$n$$ is the sequence length, $$d$$ is the representation dimension, $$k$$ is the kernel size of convolutions and $$r$$ the size of the neighborhood in restricted self-attention.
+
+ここで、$$n$$ は系列長、$$d$$ は表現の次元数、$$k$$ は畳み込みのカーネルサイズ、$$r$$ は制限付きセルフアテンションにおける近傍範囲のサイズを表す。
 
 |Layer Type|Complexity per Layer|Sequential Operations|Maximum Path Length|
 | :---: | :---: | :---: | :---: |
@@ -282,6 +286,18 @@ Table 1: Maximum path lengths, per-layer complexity and minimum number of sequen
 |Recurrent|$$O(n \cdot d^2)$$|$$O(n)$$|$$O(n)$$|
 |Convolutional|$$O(k \cdot n \cdot d^2)$$|$$O(1)$$|$$O(\log_k(n))$$|
 |Self-Attention (restricted)|$$O(r \cdot n \cdot d)$$|$$O(1)$$|$$O(n/r)$$|
+
+As noted in Table [1](#table-1-maximum-path-lengths-per-layer-complexity-and-minimum-number-of-sequential-operations-for-different-layer-types), a self-attention layer connects all positions with a constant number of sequentially executed operations, whereas a recurrent layer requires $$O(n)$$ sequential operations. In terms of computational complexity, self-attention layers are faster than recurrent layers when the sequence length n is smaller than the representation dimensionality $$d$$, which is most often the case with sentence representations used by state-of-the-art models in machine translations, such as word-piece [[38]](#38) and byte-pair [[31]](#31) representations. To improve computational performance for tasks involving very long sequences, self-attention could be restricted to considering only a neighborhood of size $$r$$ in the input sequence centered around the respective output position. This would increase the maximum path length to $$O(n/r)$$. We plan to investigate this approach further in future work.
+
+表[1](#table-1-maximum-path-lengths-per-layer-complexity-and-minimum-number-of-sequential-operations-for-different-layer-types)に示すように、セルフアテンション層は、一定回数の逐次的な演算によってすべての位置を接続する。一方、リカレント層では $$O(n)$$ 回の逐次的な演算が必要となる。計算量の観点から見ると、系列長 $$n$$ が表現の次元数 $$d$$ よりも小さい場合、セルフアテンション層はリカレント層よりも高速である。機械翻訳の最先端モデルで用いられる文表現（例えば、WordPiece [[38]](#38) や Byte-Pair [[31]](#31) による表現）においては、多くの場合この条件が満たされる。非常に長い系列を扱うタスクにおいて計算性能を向上させるために、セルフアテンションの対象を、各出力位置を中心とした入力系列上のサイズ $$r$$ の近傍のみに制限することも考えられる。この場合、最長パスの長さは $$O(n/r)$$ となる。このアプローチについては、今後の研究でさらに調査する予定である。
+
+A single convolutional layer with kernel width $$k < n$$ does not connect all pairs of input and output positions. Doing so requires a stack of $$O(n/k)$$ convolutional layers in the case of contiguous kernels, or $$O(\log_k(n))$$ in the case of dilated convolutions [[18]](#18), increasing the length of the longest paths between any two positions in the network. Convolutional layers are generally more expensive than recurrent layers, by a factor of $$k$$. Separable convolutions [[6]](#6), however, decrease the complexity considerably, to $$O(k \cdot n \cdot d + n \cdot d^2)$$. Even with $$k = n$$, however, the complexity of a separable convolution is equal to the combination of a self-attention layer and a point-wise feed-forward layer, the approach we take in our model.
+
+カーネル幅 $$k < n$$ の単一の畳み込み層では、すべての入力位置と出力位置のペアを接続することはできない。これを実現するには、連続的なカーネルを用いる場合は $$O(n/k)$$ 層、ダイレイテッド畳み込み（dilated convolution）[[18]](#18) を用いる場合は $$O(\log_k(n))$$ 層の畳み込み層を積み重ねる必要があり、ネットワーク内の任意の2点間における最長パスの長さが増大してしまう。一般に、畳み込み層はリカレント層よりも計算コストが高く、その差はカーネル幅 $$k$$ に比例する。しかし、セパラブル畳み込み（separable convolution）[[6]](#6) を用いると、計算量は $$O(k \cdot n \cdot d + n \cdot d^2)$$ まで大幅に低減される。さらに、$$k = n$$ の場合であっても、セパラブル畳み込みの計算量は、セルフアテンション層とポイントワイズ・フィードフォワード層を組み合わせたもの（本モデルで採用しているアプローチ）と同等となる。副次的な利点として、セルフアテンションを用いることで、より解釈性の高いモデルが得られる可能性がある。我々は、構築したモデルにおけるアテンション分布を調査し、その例を付録で提示して考察を行う。個々のアテンションヘッドがそれぞれ異なるタスクを遂行するよう明確に学習しているだけでなく、その多くが文の統語的・意味的構造に関連した挙動を示しているようである。
+
+As side benefit, self-attention could yield more interpretable models. We inspect attention distributions from our models and present and discuss examples in the appendix. Not only do individual attention heads clearly learn to perform different tasks, many appear to exhibit behavior related to the syntactic and semantic structure of the sentences.
+
+副次的な利点として、セルフアテンションを用いることで、より解釈性の高いモデルが得られる可能性がある。我々は、構築したモデルにおけるアテンション分布を調査し、その例を付録で提示して考察する。個々のアテンションヘッドがそれぞれ異なるタスクを実行するように学習されるだけでなく、その多くが、文の統語的および意味的な構造に関連した挙動を示すようである。
 
 ## 5 Training
 
