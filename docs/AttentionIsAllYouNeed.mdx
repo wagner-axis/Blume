@@ -461,6 +461,49 @@ In Table [3](#table-3-variations-on-the-transformer-architecture) rows (B), we o
 
 英語の構成素解析
 
+##### Table 4:
+
+表4：
+
+The Transformer generalizes well to English constituency parsing (Results are on Section 23 of WSJ)
+
+Transformerは英語の構成素解析（constituency parsing）に対しても良好な汎化性能を示す（結果はWSJのセクション23におけるもの）
+
+|Parser|Training|WSJ 23 F1|
+| :---: | :---: | :---: |
+|Vinyals & Kaiser el al. (2014) [37]|WSJ only, discriminative|88.3|
+|Petrov et al. (2006) [29]|WSJ only, discriminative|90.4|
+|Zhu et al. (2013) [40]|WSJ only, discriminative|90.4|
+|Dyer et al. (2016) [8]|WSJ only, discriminative|91.7|
+|Transformer (4 layers)|WSJ only, discriminative|91.3|
+|Zhu et al. (2013) [40]|semi-supervised|91.3|
+|Huang & Harper (2009) [14]|semi-supervised|91.3|
+|McClosky et al. (2006) [26]|semi-supervised|92.1|
+|Vinyals & Kaiser el al. (2014) [37]|semi-supervised|92.1|
+|Transformer (4 layers)|semi-supervised|92.7|
+|Luong et al. (2015) [23]|multi-task|93.0|
+|Dyer et al. (2016) [8]|generative|93.3|
+
+To evaluate if the Transformer can generalize to other tasks we performed experiments on English constituency parsing. This task presents specific challenges: the output is subject to strong structural constraints and is significantly longer than the input. Furthermore, RNN sequence-to-sequence models have not been able to attain state-of-the-art results in small-data regimes [[37]](#37).
+
+Transformerが他のタスクに対しても汎化できるかどうかを評価するため、英語の構成素解析に関する実験を行った。このタスクには特有の課題がある。出力には厳格な構造的制約が課されるうえ、入力よりも大幅に長くなるからである。さらに、RNNを用いた系列変換（sequence-to-sequence）モデルでは、データ量が少ない状況下において、最先端（state-of-the-art）の性能を達成できていない [[37]](#37)。
+
+We trained a 4-layer transformer with $$d_{model}$$=1024 on the Wall Street Journal (WSJ) portion of the Penn Treebank [[25]](#25), about 40K training sentences. We also trained it in a semi-supervised setting, using the larger high-confidence and BerkleyParser corpora from with approximately 17M sentences [[37]](#37). We used a vocabulary of 16K tokens for the WSJ only setting and a vocabulary of 32K tokens for the semi-supervised setting.
+
+我々は、Penn Treebank [[25]](#25) のWall Street Journal (WSJ) 部分（約4万文の学習データ）を用いて、モデル次元数（$$d_{model}$$）が1024の4層Transformerを学習させた。また、より大規模なコーパス（高信頼度コーパスおよびBerkeleyParserコーパス、計約1700万文）を用いた半教師あり学習も行った [[37]](#37)。語彙サイズは、WSJのみを用いる設定では1万6000トークン、半教師あり学習の設定では3万2000トークンとした。
+
+We performed only a small number of experiments to select the dropout, both attention and residual (section [5.4](#54-regularization)), learning rates and beam size on the Section 22 development set, all other parameters remained unchanged from the English-to-German base translation model. During inference, we increased the maximum output length to input length + 300. We used a beam size of 21 and $$\alpha$$=0.3 for both WSJ only and the semi-supervised setting.
+
+WSJのセクション22の開発セットを用いて、ドロップアウト率（アテンションおよび残差接続の両方。セクション[5.4](#54-regularization)参照）、学習率、ビームサイズといったハイパーパラメータの調整を限定的に行った。その他のパラメータはすべて、英独翻訳のベースモデルから変更していない。推論時には、最大出力長を「入力長＋300」に設定した。ビームサイズは21、$$\alpha$$は0.3とし、これはWSJのみを用いる設定と半教師あり学習の設定の双方で共通とした。
+
+Our results in Table [4](#table-4) show that despite the lack of task-specific tuning our model performs surprisingly well, yielding better results than all previously reported models with the exception of the Recurrent Neural Network Grammar [[8]](#8).
+
+表[4](#table-4)に示す結果から、タスク特有の調整を行っていないにもかかわらず、本モデルは驚くほど良好な性能を示すことがわかる。Recurrent Neural Network Grammar [[8]](#8) を除く、これまでに報告されたすべてのモデルを上回る結果が得られた。
+
+In contrast to RNN sequence-to-sequence models [[37]](#37), the Transformer outperforms the BerkeleyParser [[29]](#29) even when training only on the WSJ training set of 40K sentences.
+
+RNNを用いた系列変換（sequence-to-sequence）モデル [[37]](#37) とは対照的に、Transformerは、わずか4万文のWSJ学習データのみを用いた場合であっても、BerkeleyParser [[29]](#29) を上回る性能を達成した。
+
 ## 7 Conclusion
 
 結論
