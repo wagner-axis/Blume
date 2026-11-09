@@ -331,7 +331,7 @@ We used the Adam optimizer [[20]](#20) with $$\beta_1=0.9, \beta_2=0.98, \epsilo
 	
 最適化手法にはAdam [[20]](#20) を使用し、ハイパーパラメータは $$\beta_1=0.9, \beta_2=0.98, \epsilon=10^{-9}$$ とした。学習の過程において、学習率（learning rate）を以下の式に従って変化させた。
 
-$$lrate = d_{model}^{-0.5} \cdot \min(step\_num^{-0.5}, step\_num \cdot warmup\_steps^{-1.5}) (3)$$
+$$lrate = d_{model}^{-0.5} \cdot \min(step\_num^{-0.5}, step\_num \cdot warmup\_steps^{-1.5})$$   (3)
 
 This corresponds to increasing the learning rate linearly for the first $$warmup\_steps$$ training steps, and decreasing it thereafter proportionally to the inverse square root of the step number. We used $$warmup\_steps = 4000$$.
 
